@@ -1,0 +1,37 @@
+@baseUrl = http://localhost:5000/apis
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc4MjM1NjIxMywianRpIjoiNjhmYTgxMGEtNWQ5NS00OWZmLWI1NjctYzdhMmUwNGNiZTY1IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6Impsb3BleiIsIm5iZiI6MTc4MjM1NjIxMywiY3NyZiI6Ijk0MWQzNTYxLTk0MWYtNDAyOC05NDQ2LTBhZjc2YmJmZTI1ZCIsImV4cCI6MTc4MjM1NzExMywidXNlcl9pZCI6MX0.7eg4-kIXtLD9vLbPoEXckjHlewmqTezTCvHugWhy2G0
+
+
+#############################################
+# MOVIES - LISTAR TODAS (V1)
+#############################################
+GET {{baseUrl}}/v1/movies
+Authorization: Bearer {{token}}
+
+
+#############################################
+# MOVIES - FILTRAR POR GÉNERO (V2)
+#############################################
+GET {{baseUrl}}/v2/movies?genre=accion
+Authorization: Bearer {{token}}
+
+
+#############################################
+# MOVIES - FILTRAR POR TÍTULO (V3)
+#############################################
+GET {{baseUrl}}/v3/movies?title=The Dark Knight
+Authorization: Bearer {{token}}
+
+
+#############################################
+# MOVIES - LISTAR CON REVIEWS (V4)
+#############################################
+GET {{baseUrl}}/v4/movies
+Authorization: Bearer {{token}}
+
+
+#############################################
+# MOVIES - DETALLE POR ID
+#############################################
+GET {{baseUrl}}/v1/movies/1
+Authorization: Bearer {{token}}

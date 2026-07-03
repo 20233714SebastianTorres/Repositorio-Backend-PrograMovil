@@ -1,0 +1,329 @@
+tengo estos modelos
+
+# biblio\models.py
+from datetime import date, datetime
+from typing import List, Optional
+from sqlalchemy import ForeignKey, String, Integer, Date, Boolean, Text, SmallInteger, DateTime
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+class Base(DeclarativeBase):
+    pass
+
+# ==========================================
+# 1. TABLAS DE CATÁLOGO / INDEPENDIENTES
+# ==========================================
+
+class Sex(Base):
+    __tablename__ = "sexs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(20))
+
+    users: Mapped[List["User"]] = relationship(back_populates="sex")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name
+        }
+
+
+class Nationality(Base):
+    __tablename__ = "nationalities"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    demonym: Mapped[str] = mapped_column(String(100))
+
+    users: Mapped[List["User"]] = relationship(back_populates="nationality")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "demonym": self.demonym
+        }
+
+
+class DeviceType(Base):
+    __tablename__ = "device_types"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(50))
+
+    devices: Mapped[List["Device"]] = relationship(back_populates="device_type")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name
+        }
+
+
+class Publisher(Base):
+    __tablename__ = "publishers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255))
+    logo: Mapped[Optional[str]] = mapped_column(Text)
+
+    books: Mapped[List["Book"]] = relationship(back_populates="publisher")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "logo": self.logo
+        }
+
+
+class Genre(Base):
+    __tablename__ = "genres"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100))
+
+    books: Mapped[List["Book"]] = relationship(
+        secondary="books_genres", back_populates="genres"
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name
+        }
+
+
+class Author(Base):
+    __tablename__ = "authors"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    full_name: Mapped[str] = mapped_column(String(255))
+    birth_date: Mapped[Optional[date]] = mapped_column(Date)
+    picture: Mapped[Optional[str]] = mapped_column(Text)
+
+    books: Mapped[List["Book"]] = relationship(
+        secondary="books_authors", back_populates="authors"
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "full_name": self.full_name,
+            "birth_date": self.birth_date.isoformat() if self.birth_date else None,
+            "picture": self.picture
+        }
+
+
+# ==========================================
+# 2. TABLAS PRINCIPALES Y RELACIONES
+# ==========================================
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(40))
+    password: Mapped[str] = mapped_column(String(90))
+    first_name: Mapped[str] = mapped_column(String(100))
+    last_name: Mapped[str] = mapped_column(String(100))
+    email: Mapped[str] = mapped_column(String(255))
+    reset_key: Mapped[Optional[str]] = mapped_column(String(50))
+    status: Mapped[bool] = mapped_column(Boolean)
+    activation_key: Mapped[Optional[str]] = mapped_column(String(50))
+    birth_date: Mapped[Optional[date]] = mapped_column(Date)
+    profile_picture: Mapped[Optional[str]] = mapped_column(Text)
+    
+    sex_id: Mapped[Optional[int]] = mapped_column(ForeignKey("sexs.id"))
+    nationality_id: Mapped[Optional[int]] = mapped_column(ForeignKey("nationalities.id"))
+
+    sex: Mapped[Optional["Sex"]] = relationship(back_populates="users")
+    nationality: Mapped[Optional["Nationality"]] = relationship(back_populates="users")
+    devices: Mapped[List["Device"]] = relationship(back_populates="user")
+    reviews: Mapped[List["Review"]] = relationship(back_populates="user")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "email": self.email,
+            "status": self.status,
+            "birth_date": self.birth_date.isoformat() if self.birth_date else None,
+            "profile_picture": self.profile_picture,
+            "sex": self.sex.to_dict() if self.sex else None,
+            "nationality": self.nationality.to_dict() if self.nationality else None
+            # Excluimos contraseñas y llaves de activación por seguridad
+        }
+
+
+class Device(Base):
+    __tablename__ = "devices"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    brand: Mapped[str] = mapped_column(String(100))
+    device_type_id: Mapped[Optional[int]] = mapped_column(ForeignKey("device_types.id"))
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+
+    device_type: Mapped[Optional["DeviceType"]] = relationship(back_populates="devices")
+    user: Mapped[Optional["User"]] = relationship(back_populates="devices")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "brand": self.brand,
+            "device_type": self.device_type.to_dict() if self.device_type else None,
+            "user_id": self.user_id
+        }
+
+
+class Book(Base):
+    __tablename__ = "books"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(String(255))
+    isbn: Mapped[Optional[str]] = mapped_column(String(20))
+    pages: Mapped[Optional[int]] = mapped_column(Integer)
+    publication_year: Mapped[Optional[int]] = mapped_column(Integer)
+    edition_year: Mapped[Optional[int]] = mapped_column(Integer)
+    synopsis: Mapped[Optional[str]] = mapped_column(String(300))
+    cover_image: Mapped[Optional[str]] = mapped_column(String(100))
+    pdf_url: Mapped[Optional[str]] = mapped_column(String(100))
+    publisher_id: Mapped[Optional[int]] = mapped_column(ForeignKey("publishers.id"))
+
+    publisher: Mapped[Optional["Publisher"]] = relationship(back_populates="books")
+    reviews: Mapped[List["Review"]] = relationship(back_populates="books")
+    genres: Mapped[List["Genre"]] = relationship(secondary="books_genres", back_populates="books")
+    authors: Mapped[List["Author"]] = relationship(secondary="books_authors", back_populates="books")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "isbn": self.isbn,
+            "pages": self.pages,
+            "publication_year": self.publication_year,
+            "edition_year": self.edition_year,
+            "synopsis": self.synopsis,
+            "cover_image": self.cover_image,
+            "pdf_url": self.pdf_url,
+            "publisher": self.publisher.to_dict() if self.publisher else None,
+            "genres": [genre.to_dict() for genre in self.genres],
+            "authors": [author.to_dict() for author in self.authors]
+        }
+
+
+class Review(Base):
+    __tablename__ = "reviews"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    rating: Mapped[int] = mapped_column(SmallInteger)
+    comment: Mapped[Optional[str]] = mapped_column(Text)
+    review_date: Mapped[datetime] = mapped_column(DateTime)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    book_id: Mapped[Optional[int]] = mapped_column(ForeignKey("books.id"))
+
+    user: Mapped["User"] = relationship(back_populates="reviews")
+    books: Mapped["Book"] = relationship(back_populates="reviews")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "rating": self.rating,
+            "comment": self.comment,
+            "review_date": self.review_date.isoformat() if self.review_date else None,
+            "user_id": self.user_id,
+            "book_id": self.book_id
+        }
+
+
+# ==========================================
+# 3. TABLAS INTERMEDIAS
+# ==========================================
+# Nota: Las tablas intermedias puras no suelen requerir un 'to_dict' 
+# porque accedes a los datos mediante las relaciones de 'Book', 'Genre' o 'Author'.
+
+class BookGenre(Base):
+    __tablename__ = "books_genres"
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), primary_key=True)
+    genre_id: Mapped[int] = mapped_column(ForeignKey("genres.id"), primary_key=True)
+
+
+class BookAuthor(Base):
+    __tablename__ = "books_authors"
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), primary_key=True)
+    author_id: Mapped[int] = mapped_column(ForeignKey("authors.id"), primary_key=True)
+
+tengo este endpoint
+
+# biblio\apis\book.py
+import traceback
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required
+from main.models import User
+from biblio.models import Book
+from main.database import Session
+
+api = Blueprint('biblio_apis_books', __name__)
+
+@api.route('/apis/v1/books', methods=['GET'])
+#@jwt_required()
+def fetch_all():
+  # data
+  response = None
+  status = 200
+  # blogic
+  session = Session()
+  try:
+    books = session.query(Book).all()
+    books_list = [book.to_dict() for book in books]
+    response = jsonify({
+      'message': 'lista de libros',
+      'data': books_list, 
+      'success': True,
+      'error': None
+    })
+  except Exception as e:
+    traceback.print_exc()
+    response = jsonify({
+      'message': 'Ocurrió un error en lista los libros',
+      'error': str(e),
+      'data': None,
+      'success': False
+    })
+    status = 500
+  finally:
+    session.close()
+  # response
+  return response, status
+
+quiero que el endpoint me devuelva este formato de json
+
+[
+  {
+    "id": 1,
+    "title": "Cien años de soledad",
+    "isbn": "9780307474728",
+    "pages": 417,
+    "publication_year": 1967,
+    "edition_year": 2007,
+    "synopsis": "La historia de la familia Buendía en el pueblo de Macondo.",
+    "cover_image": "https://www.crisol.com.pe/media/catalog/product/9/7/9786125253026_1.jpg?width=700&height=1050&store=default&image-type=small_image",
+    "pdf_url": "https://pdlibrosmex.cdnstatics2.com/usuaris/libros_contenido/arxius/37/36904_1_LibroCienanosdesoledadGabrielGarciaMarquez.pdf",
+    "publisher": {
+      "id": 1,
+      "name": "Penguin Random House",
+      "logo": "https://example.com/logos/penguin_random_house.png"
+    },
+    "authors": [
+      {
+        "id": 1,
+        "full_name": "Gabriel García Márquez",
+        "birth_date": "1927-03-06",
+        "picture": "https://example.com/authors/gabriel_garcia_marquez.png"
+      }
+    ],
+    "genres": [
+      { "id": 1, "name": "Ficción" },
+      { "id": 3, "name": "Fantasía" }
+    ]
+  },
