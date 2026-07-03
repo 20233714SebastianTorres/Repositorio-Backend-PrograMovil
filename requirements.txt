@@ -1,4 +1,0 @@
-flask
-sqlalchemy
-Flask-Session
-flask-jwt-extended
